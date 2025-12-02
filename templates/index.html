@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Handwritten Digit Recognition</title>
+    <style>
+        #canvas {
+            border: 2px solid black;
+            background: black;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <h2>手写数字识别</h2>
+    <canvas id="canvas" width="280" height="280"></canvas><br><br>
+
+    <button onclick="clearCanvas()">清除</button>
+    <button onclick="predict()">识别</button>
+
+    <h3>预测结果：<span id="result"></span></h3>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
