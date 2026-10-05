@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "model_id": "mnist-cnn-20260922-seed42",
+  "filename": "model.keras",
+  "sha256": "345c71f9ad21f9c4f95b5c66f17dc5ac51abfe78c107891676dfa470c22510ca",
+  "preprocessing_version": "white-ink-crop20-mass-center28-v1",
+  "input_shape": [
+    null,
+    28,
+    28,
+    1
+  ],
+  "output_classes": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ]
+}
