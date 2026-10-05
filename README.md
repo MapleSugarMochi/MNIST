@@ -25,7 +25,7 @@ python app.py
 默认加载随 Git、sdist 和 wheel 一起发布的 `mnist_web/assets/model.keras`。
 它的 `model.manifest.json` 固定模型编号、SHA-256、预处理版本和类别顺序。
 加载后先校验哈希，再执行预热并验证输出；日志记录实际模型身份。
-根目录遗留的 `model.h5`、`model.keras` 不会自动替换发布模型。
+仓库只保留这一份模型；旧 HDF5 模型、根目录重复副本和实验候选均已移除。
 
 使用自行训练的模型时显式配置路径，并保留训练生成的同名 manifest：
 
@@ -90,9 +90,8 @@ python -m mnist_web.evaluation --canvas-validation datasets/validation.json --ca
 目标是经验筛选规则，不是统计保证或概率校准。评测拒绝图像重复与验证/测试书写者重叠。
 合成画板结果始终独立标注，不能替代真实用户准确率。
 
-本次完整评测：发布模型 MNIST 准确率 **99.21%**。统一预处理的新候选达到 **99.30%**
-原始 MNIST 准确率，但在加粗倾斜合成样本上有退步，因此暂保留已有模型为默认。
-完整对照、性能数字和局限见 [优化记录](reports/optimization.md)。
+本次完整评测：唯一保留的发布模型 MNIST 准确率为 **99.21%**。
+各类合成画板结果、性能数字和局限见 [优化记录](reports/optimization.md)。
 
 ## 检查、安装包与模型发布产物
 
