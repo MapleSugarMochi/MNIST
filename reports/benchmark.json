@@ -1,0 +1,39 @@
+{
+  "model": {
+    "id": "mnist-cnn-20260922-seed42",
+    "sha256": "345c71f9ad21f9c4f95b5c66f17dc5ac51abfe78c107891676dfa470c22510ca",
+    "preprocessing_version": "white-ink-crop20-mass-center28-v1"
+  },
+  "runtime": {
+    "python": "3.13.9",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": {
+      "tensorflow": "2.20.0",
+      "keras": "3.12.0",
+      "numpy": "2.3.4",
+      "Pillow": "12.0.0",
+      "Flask": "3.1.2"
+    }
+  },
+  "iterations": 30,
+  "concurrent_workers": 4,
+  "direct": {
+    "median_ms": 6.002300011459738,
+    "p95_ms": 7.138900004792958
+  },
+  "predict": {
+    "median_ms": 51.87259998638183,
+    "p95_ms": 84.16537995799445
+  },
+  "cold_ready_ms": 50.02600001171231,
+  "api_sequential": {
+    "median_ms": 6.7954499972984195,
+    "p95_ms": 7.2208500117994845
+  },
+  "api_concurrent": {
+    "median_ms": 27.64595003100112,
+    "p95_ms": 30.487525049829856,
+    "requests_per_second": 140.48409886183032,
+    "note": "In-process Flask clients, excluding HTTP network and WSGI overhead."
+  }
+}
