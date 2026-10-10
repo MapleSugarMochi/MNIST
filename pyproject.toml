@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mnist-web-demo"
-version = "2.1.0"
+version = "2.2.0"
 description = "A robust Flask web interface for MNIST digit recognition"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"

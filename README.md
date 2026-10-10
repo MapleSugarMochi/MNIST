@@ -10,7 +10,7 @@ Write a single digit in the browser and inspect its prediction and three highest
 | --- | --- |
 | Task | Classification of individual handwritten digits, 0–9 |
 | Model | Two convolutional blocks and a 10-class Softmax output |
-| Recorded MNIST accuracy | **99.21%** on the full 10,000-image test set |
+| Recorded MNIST accuracy | **99.23%** on the full 10,000-image test set (99.24% with serving preprocessing) |
 | Runtime | Python 3.11–3.13; TensorFlow/Keras; Flask |
 | Delivery | Python wheel, source distribution, and checksummed model bundle |
 | License | [MIT](LICENSE) |
@@ -72,16 +72,16 @@ The canvas uses white ink on black. Transparent PNGs are composited onto black b
 
 ## Evaluation results
 
-The checked-in [evaluation report](reports/evaluation.json) records results for `mnist-cnn-20260922-seed42`. The [evaluation notes](reports/optimization.md) date the evaluation to October 5, 2026. Each row uses all 10,000 MNIST test images.
+The checked-in [evaluation report](reports/evaluation.json) records results for `mnist-drawing-seed42-20261010T103405Z`. The [evaluation notes](reports/optimization.md) date the evaluation to October 10, 2026. Each row uses all 10,000 MNIST test images.
 
 | Input condition | Accuracy |
 | --- | ---: |
-| MNIST, normalization only | **99.21%** |
-| MNIST, cropping and mass centering | **99.21%** |
-| Synthetic canvas, regular size | 99.26% |
-| Synthetic canvas, small and offset | 99.25% |
-| Synthetic canvas, thick strokes and 12° tilt | 98.72% |
-| Synthetic canvas, thin strokes | 99.20% |
+| MNIST, normalization only | **99.23%** |
+| MNIST, cropping and mass centering | **99.24%** |
+| Synthetic canvas, regular size | 99.24% |
+| Synthetic canvas, small and offset | 99.26% |
+| Synthetic canvas, thick strokes and 12° tilt | 98.58% |
+| Synthetic canvas, thin strokes | 99.18% |
 
 Synthetic canvases are generated from MNIST images on a black 280 × 280 canvas and passed through serving preprocessing. These results measure controlled transformations; independent human canvas data has not yet been collected. The report also includes per-class precision, recall, F1, confusion matrices, and score reliability diagnostics.
 
@@ -95,13 +95,13 @@ Keras downloads MNIST when needed. To evaluate another model, add `--model artif
 
 ### Performance measurement
 
-The recorded [benchmark](reports/benchmark.json) uses Windows 11, Python 3.13.9, TensorFlow 2.20.0, and 30 iterations after warm-up.
+The recorded [benchmark](reports/benchmark.json) uses a 2-vCPU Linux x86-64 environment, Python 3.13.16, TensorFlow 2.20.0, and 30 iterations after warm-up.
 
 | Operation | Median | p95 |
 | --- | ---: | ---: |
-| Direct model call | 6.00 ms | 7.14 ms |
-| Sequential Flask test-client request | 6.80 ms | 7.22 ms |
-| Flask test-client request with 4 workers | 27.65 ms | 30.49 ms |
+| Direct model call | 6.38 ms | 10.36 ms |
+| Sequential Flask test-client request | 7.49 ms | 8.82 ms |
+| Flask test-client request with 4 workers | 35.06 ms | 45.40 ms |
 
 These local, in-process measurements exclude HTTP network and WSGI overhead. Measure the target environment separately when assessing deployment performance.
 
@@ -196,7 +196,7 @@ The network uses `Conv2D(32) → MaxPooling2D → Conv2D(64) → MaxPooling2D �
 
 Outputs go to `artifacts/` by default. Reproduction depends on matching dependencies, hardware, and runtime; bitwise identity across devices is not guaranteed.
 
-The bundled model predates this pipeline. Its [historical metadata](mnist_web/assets/model.metadata.json) records normalization-only training, a non-stratified validation split, and selection by `val_accuracy`. The reported results belong to that artifact; they are not results from retraining with the current pipeline.
+The bundled model was produced by this pipeline with the command above (default `drawing` preprocessing, seed 42). Training stopped early after 16 epochs and restored epoch 13, the lowest `val_loss`. Its [metadata](mnist_web/assets/model.metadata.json) records the runtime, dataset and split hashes, history, and test metrics. A second run in the same environment reproduced bit-identical weights; the `.keras` file hash differs between runs because the archive stores a save timestamp.
 
 ## Human canvas evaluation
 
