@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "model_id": "mnist-drawing-seed42-20261010T103405Z",
+  "source_sha256": "45a77cdde6359b9aa32ac8142cd3c5f19264a55eb3aa1ab23602ad759e423f0c",
+  "onnx_sha256": "7ab36e8865836995c290f68d89e73e4b851c46430de800bfe5515b26a839707d",
+  "preprocessing_version": "white-ink-crop20-mass-center28-v1",
+  "opset": 17,
+  "input": {
+    "name": "image",
+    "shape": [
+      null,
+      28,
+      28,
+      1
+    ],
+    "dtype": "float32"
+  },
+  "output": "probabilities",
+  "parity": {
+    "dataset": "MNIST test set, 10,000 images, serving preprocessing",
+    "max_abs_probability_diff": 1.2516975402832031e-06,
+    "argmax_agreement": 1.0,
+    "test_accuracy": 0.9924
+  }
+}

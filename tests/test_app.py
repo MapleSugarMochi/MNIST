@@ -64,13 +64,13 @@ def test_missing_image_returns_json_400():
 def test_invalid_data_url_returns_json_400():
     response = make_client().post("/predict", json={"image": "not-an-image"})
     assert response.status_code == 400
-    assert "PNG Data URL" in response.get_json()["error"]
+    assert "PNG data URL" in response.get_json()["error"]
 
 
 def test_blank_canvas_returns_json_400():
     response = make_client().post("/predict", json={"image": png_data_url(False)})
     assert response.status_code == 400
-    assert response.get_json()["error"] == "请先写一个数字。"
+    assert response.get_json()["error"] == "Draw a digit first."
 
 
 def test_request_size_limit_returns_json_413():

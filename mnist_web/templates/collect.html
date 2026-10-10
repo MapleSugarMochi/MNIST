@@ -1,38 +1,38 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>画板评测样本采集</title>
+    <title>Canvas Evaluation Sample Collection</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <main class="card">
         <header>
-            <p class="eyebrow">MNIST · 评测数据</p>
-            <h1>记录你的笔迹</h1>
-            <p class="intro">先选择真实标签，再书写并保存。样本只留在本页内存中，请在离开前导出。</p>
+            <p class="eyebrow">MNIST · Evaluation data</p>
+            <h1>Record your handwriting</h1>
+            <p class="intro">Choose the true label, draw, then save. Samples stay in this page's memory only, so export them before leaving.</p>
         </header>
-        <label for="writer-id">匿名书写者编号（请勿填写姓名）</label>
+        <label for="writer-id">Anonymous writer ID (do not enter a name)</label>
         <input id="writer-id" maxlength="64" required>
-        <label for="digit-label">真实标签</label>
+        <label for="digit-label">True label</label>
         <select id="digit-label">
             {% for digit in range(10) %}<option value="{{ digit }}">{{ digit }}</option>{% endfor %}
-            <option value="-1">非数字 / 多个数字 / 乱画</option>
+            <option value="-1">Not a digit / multiple digits / scribble</option>
         </select>
-        <p class="intro">请包含大小、粗细、偏移、倾斜等自然变化。验证集和测试集应由不同的人书写。</p>
-        <canvas id="canvas" width="280" height="280" aria-label="样本采集画布"></canvas>
+        <p class="intro">Include natural variation in size, stroke width, position, and slant. Validation and test sets should come from different writers.</p>
+        <canvas id="canvas" width="280" height="280" aria-label="Sample collection canvas"></canvas>
         <div class="actions">
-            <button id="clear-button" class="secondary" type="button">清除</button>
-            <button id="save-button" type="button">保存样本</button>
+            <button id="clear-button" class="secondary" type="button">Clear</button>
+            <button id="save-button" type="button">Save sample</button>
         </div>
         <div class="actions">
-            <button id="undo-button" class="secondary" type="button">撤销上一条</button>
-            <button id="export-button" type="button">导出 JSON</button>
+            <button id="undo-button" class="secondary" type="button">Undo last</button>
+            <button id="export-button" type="button">Export JSON</button>
         </div>
         <p id="status" class="status" aria-live="polite"></p>
-        <p class="intro"><a href="{{ url_for('index') }}">返回识别</a></p>
+        <p class="intro"><a href="{{ url_for('index') }}">Back to recognition</a></p>
     </main>
     <script src="{{ url_for('static', filename='drawing.js') }}" defer></script>
     <script src="{{ url_for('static', filename='collect.js') }}" defer></script>

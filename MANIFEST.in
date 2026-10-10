@@ -1,4 +1,4 @@
 include requirements.lock constraints-tested.txt
 recursive-include scripts *.py
-recursive-include tests *.py *.cjs
+recursive-include tests *.py *.cjs *.json
 recursive-include reports *.json *.md

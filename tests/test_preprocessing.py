@@ -6,7 +6,7 @@ from preprocessing import EmptyDrawingError, preprocess_drawing
 
 
 def test_blank_drawing_is_rejected():
-    with pytest.raises(EmptyDrawingError, match="请先写一个数字"):
+    with pytest.raises(EmptyDrawingError, match="Draw a digit first"):
         preprocess_drawing(Image.new("L", (280, 280), 0))
 
 

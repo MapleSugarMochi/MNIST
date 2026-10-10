@@ -93,17 +93,17 @@ test("timeout aborts the request and restores controls", async () => {
     const pending = h.run("predict()");
     h.timers[0]();
     await pending;
-    assert.equal(h.element("status").textContent, "识别超时，请重试。");
+    assert.equal(h.element("status").textContent, "Recognition timed out. Please try again.");
     assert.equal(h.run("drawing.busy"), false);
     assert.equal(h.element("clear-button").disabled, false);
 });
 
 test("unavailable service surfaces JSON error and stale responses are discarded", async () => {
     const h = harness("script.js", async () => ({ ok: false,
-        json: async () => ({ error: "模型暂不可用。" }) }));
+        json: async () => ({ error: "Model is unavailable." }) }));
     h.element("canvas").listeners.pointerdown(h.pointer());
     await h.run("predict()");
-    assert.equal(h.element("status").textContent, "模型暂不可用。");
+    assert.equal(h.element("status").textContent, "Model is unavailable.");
     const stale = harness("script.js", async () => {
         stale.run("drawing.version += 1");
         return { ok: true, json: async () => ({ prediction: 7, confidence: 0.98,
@@ -128,4 +128,26 @@ test("collection saves anonymous label, clears drawing, and supports undo and ex
     assert.ok(h.element("a").download.endsWith(".json"));
     h.element("undo-button").listeners.click();
     assert.equal(h.run("samples.length"), 0);
+});
+
+test("browser preprocessing reproduces the Python pipeline pixel for pixel", () => {
+    const zlib = require("node:zlib");
+    const preprocessing = require("../demo/preprocessing.js");
+    const fixture = JSON.parse(fs.readFileSync(
+        path.join(__dirname, "fixtures", "preprocessing_parity.json"), "utf8"));
+    assert.equal(fixture.preprocessing_version, preprocessing.PREPROCESSING_VERSION);
+    assert.ok(fixture.samples.length >= 300);
+    for (const [index, sample] of fixture.samples.entries()) {
+        const gray = new Uint8Array(zlib.inflateSync(Buffer.from(sample.gray, "base64")));
+        const expected = new Uint8Array(zlib.inflateSync(Buffer.from(sample.expected, "base64")));
+        const actual = preprocessing.preprocessGray(gray, sample.width, sample.height);
+        assert.deepEqual(actual, expected, `sample ${index} (${sample.source})`);
+    }
+});
+
+test("browser preprocessing rejects empty drawings and rounds like Python", () => {
+    const preprocessing = require("../demo/preprocessing.js");
+    assert.throws(() => preprocessing.preprocessGray(new Uint8Array(280 * 280), 280, 280),
+        preprocessing.EmptyDrawingError);
+    assert.deepEqual([0.5, 1.5, 2.5, -0.5, 2.6].map(preprocessing.roundHalfEven), [0, 2, 2, 0, 3]);
 });

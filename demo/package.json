@@ -1,0 +1,9 @@
+{
+  "name": "mnist-browser-demo",
+  "private": true,
+  "description": "Static in-browser demo: vendored ONNX Runtime Web for the GitHub Pages build.",
+  "license": "MIT",
+  "dependencies": {
+    "onnxruntime-web": "1.29.0"
+  }
+}

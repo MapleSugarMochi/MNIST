@@ -1,0 +1,7 @@
+# Optional tooling for scripts/export_onnx.py (not needed to run, test, or build the app).
+# tf2onnx pins an old protobuf, so install these without dependency resolution
+# into an environment that already has requirements.lock installed:
+#   python -m pip install --no-deps -r requirements-export.txt
+tf2onnx==1.16.1
+onnx==1.19.1
+onnxruntime==1.23.2

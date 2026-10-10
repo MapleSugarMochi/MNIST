@@ -89,11 +89,20 @@ class MnistCanvas {
         this.changed();
     }
 
-    exportPNG() {
+    // Downsample the device-pixel canvas to the 280x280 image the model pipeline expects.
+    exportCanvas() {
         const exportCanvas = document.createElement("canvas");
         exportCanvas.width = exportCanvas.height = this.size;
         exportCanvas.getContext("2d").drawImage(this.canvas, 0, 0, this.size, this.size);
-        return exportCanvas.toDataURL("image/png");
+        return exportCanvas;
+    }
+
+    exportPNG() {
+        return this.exportCanvas().toDataURL("image/png");
+    }
+
+    exportImageData() {
+        return this.exportCanvas().getContext("2d").getImageData(0, 0, this.size, this.size);
     }
 }
 

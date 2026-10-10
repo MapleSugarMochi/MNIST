@@ -1,264 +1,206 @@
-# MNIST · Handwritten Digit Recognition
+# MNIST Digit Recognizer
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+**A handwritten digit recognizer that runs entirely in the browser, backed by a reproducible TensorFlow training pipeline, a verified Flask inference service, and honest evaluation.**
 
-A handwritten digit recognition application built with TensorFlow/Keras and Flask, with an interactive drawing canvas, a pretrained CNN, and tooling for training, evaluation, and model packaging.
+[![CI](https://github.com/MapleSugarMochi/MNIST/actions/workflows/ci.yml/badge.svg)](https://github.com/MapleSugarMochi/MNIST/actions/workflows/ci.yml)
+[![Deploy browser demo](https://github.com/MapleSugarMochi/MNIST/actions/workflows/pages.yml/badge.svg)](https://github.com/MapleSugarMochi/MNIST/actions/workflows/pages.yml)
+![Python 3.11–3.13](https://img.shields.io/badge/python-3.11%E2%80%933.13-3776ab)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Write a single digit in the browser and inspect its prediction and three highest model scores. The repository includes the model and web assets needed to run locally, alongside versioned preprocessing, evaluation reports, automated tests, and distribution workflows.
+### [▶ Try the live demo](https://maplesugarmochi.github.io/MNIST/)
 
-| At a glance | Details |
-| --- | --- |
-| Task | Classification of individual handwritten digits, 0–9 |
-| Model | Two convolutional blocks and a 10-class Softmax output |
-| Recorded MNIST accuracy | **99.23%** on the full 10,000-image test set (99.24% with serving preprocessing) |
-| Runtime | Python 3.11–3.13; TensorFlow/Keras; Flask |
-| Delivery | Python wheel, source distribution, and checksummed model bundle |
-| License | [MIT](LICENSE) |
+Draw a digit, and the CNN classifies it in a few milliseconds with ONNX Runtime Web. No server is involved, and nothing you draw leaves your device. The demo shows the exact 28×28 image the model sees and the score for every class.
+
+<p align="center">
+  <img src="docs/demo.gif" alt="Drawing digits in the browser demo: each stroke updates the prediction, the 28x28 model input, and the per-class scores" width="720">
+</p>
+
+## Highlights
+
+- **99.24% accuracy** on the full 10,000-image MNIST test set, through the same preprocessing used for canvas drawings. Expected calibration error is 0.0012.
+- **Serverless browser inference.** The Keras model is exported to ONNX (opset 17) and checked against Keras on all 10,000 test images: argmax agreement is 100%, and the maximum probability difference is 1.3 × 10⁻⁶.
+- **One preprocessing contract, pixel-exact on two runtimes.** The Python pipeline (crop, Lanczos resize, center-of-mass alignment) is ported to JavaScript, including Pillow's fixed-point Lanczos resampling. CI checks the port against 340 fixtures generated in Python.
+- **Reproducible training.** The pipeline uses a stratified split, fixed seeds, deterministic TensorFlow ops, and `val_loss`-based checkpointing. It records runtime, data, and split hashes. Retraining in the same environment reproduces bit-identical weights.
+- **Verified model identity.** The service refuses to load a model whose SHA-256 or preprocessing version doesn't match its manifest. It warms up and validates the model's outputs, and reports exactly which model answered each request.
+- **Production-minded service.** Separate liveness and readiness checks, input limits, JSON errors, a packaged wheel that runs outside the checkout, hash-locked dependencies, and checksummed release bundles.
+- **Honest evaluation.** Synthetic canvas tests are labeled as synthetic. Tooling for collecting and evaluating human handwriting, split by writer, is built in. Confidence thresholds are opt-in and must be fit on human validation data.
+
+## How it works
+
+```mermaid
+flowchart LR
+    subgraph Training["Training (Python)"]
+        D[MNIST] --> P1[Preprocess v1] --> T[CNN training<br/>seed 42, deterministic] --> K[model.keras<br/>+ manifest + metadata]
+    end
+    K -->|SHA-256 verified| S[Flask service<br/>/predict]
+    K -->|export + parity check| O[model.onnx]
+    subgraph Browser["Static demo (GitHub Pages)"]
+        C[Canvas] --> P2[Preprocess v1<br/>JS port] --> R[ONNX Runtime Web] --> U[Prediction, 28×28 view,<br/>class scores]
+    end
+    O --> R
+```
+
+Every path uses the same versioned preprocessing, `white-ink-crop20-mass-center28-v1`:
+
+1. Composite onto black and convert to grayscale.
+2. Crop to the visible strokes (pixels brighter than 20).
+3. Resize so the longer side is 20 px, using Lanczos resampling.
+4. Paste into a 28×28 frame, then shift so the center of mass sits in the middle, as in the original MNIST preparation.
+5. Normalize to `[0, 1]`.
+
+## Results
+
+Each row uses all 10,000 MNIST test images. Synthetic canvases render test digits onto a 280×280 canvas and pass them through the serving pipeline. They measure robustness to controlled transformations, not accuracy on human handwriting.
+
+| Input condition | Accuracy |
+| --- | ---: |
+| MNIST, normalization only | 99.23% |
+| MNIST, serving preprocessing | **99.24%** |
+| Synthetic canvas, regular | 99.24% |
+| Synthetic canvas, small and offset | 99.26% |
+| Synthetic canvas, thick strokes and 12° tilt | 98.58% |
+| Synthetic canvas, thin strokes | 99.18% |
+
+The [model card](reports/model-card.md) covers training details, per-class results, the most common confusions (9 → 4, 5 → 3), latency, and limitations. Raw metrics are in [`reports/evaluation.json`](reports/evaluation.json) and [`reports/benchmark.json`](reports/benchmark.json).
 
 ## Quick start
 
-Use Python 3.11–3.13. The application loads the bundled model; training is optional.
+### Run the browser demo locally
+
+```bash
+npm ci --prefix demo                    # vendors ONNX Runtime Web
+python scripts/build_site.py            # assembles _site/ and checks the model is current
+python -m http.server --directory _site 8000
+```
+
+Then open <http://localhost:8000>.
+
+### Run the Flask service
+
+Requires Python 3.11–3.13. The bundled model loads by default, so no training is needed.
 
 ```bash
 git clone https://github.com/MapleSugarMochi/MNIST.git
 cd MNIST
 python -m venv .venv
-```
-
-Activate the environment on Windows PowerShell:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Or on Linux/macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Install the hash-locked dependencies and the application:
-
-```bash
+source .venv/bin/activate              # Windows: .venv\Scripts\Activate.ps1
 python -m pip install --require-hashes -r requirements.lock
 python -m pip install --no-deps --no-build-isolation -e .
-python app.py
+python app.py                          # http://127.0.0.1:5000
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000), draw one digit, and select the recognition button. The interface currently uses Chinese labels and supports mouse, touch, and stylus input.
-
-The installed `mnist-web` command also starts the application. A wheel includes the model, templates, and static assets, so the command can run outside the source directory. CI covers Windows and Linux; macOS is outside the current CI matrix.
-
-## Capabilities and inference pipeline
-
-- **Interactive inference:** ranked predictions and model scores. Drawing pauses while a request is pending; a 15-second timeout restores the controls.
-- **Consistent input processing:** crop visible ink, preserve aspect ratio when resizing, center by pixel mass, and normalize.
-- **Verified model identity:** check the model SHA-256, warm inference, validate the output, and report the loaded model identity.
-- **Explicit service behavior:** separate liveness and readiness checks, bounded image inputs, and JSON errors.
-- **Evaluation tooling:** MNIST metrics, synthetic canvas variants, and independent human canvas evaluation.
-- **Traceable artifacts:** manifests, training metadata, hash-locked dependencies, and checksummed release bundles.
-
-```mermaid
-flowchart LR
-    A[Browser canvas] --> B[PNG validation]
-    B --> C[Crop visible ink]
-    C --> D[Resize: longest side 20 px]
-    D --> E[Center and normalize: 28 × 28]
-    E --> F[CNN inference]
-    F --> G[Prediction, top 3, model identity]
-```
-
-The canvas uses white ink on black. Transparent PNGs are composited onto black before processing. Model input is a float32 tensor of shape `(1, 28, 28, 1)` with values in `[0, 1]`.
-
-## Evaluation results
-
-The checked-in [evaluation report](reports/evaluation.json) records results for `mnist-drawing-seed42-20261010T103405Z`. The [evaluation notes](reports/optimization.md) date the evaluation to October 10, 2026. Each row uses all 10,000 MNIST test images.
-
-| Input condition | Accuracy |
-| --- | ---: |
-| MNIST, normalization only | **99.23%** |
-| MNIST, cropping and mass centering | **99.24%** |
-| Synthetic canvas, regular size | 99.24% |
-| Synthetic canvas, small and offset | 99.26% |
-| Synthetic canvas, thick strokes and 12° tilt | 98.58% |
-| Synthetic canvas, thin strokes | 99.18% |
-
-Synthetic canvases are generated from MNIST images on a black 280 × 280 canvas and passed through serving preprocessing. These results measure controlled transformations; independent human canvas data has not yet been collected. The report also includes per-class precision, recall, F1, confusion matrices, and score reliability diagnostics.
-
-Re-run the standard and synthetic evaluations into a local report:
-
-```bash
-python -m mnist_web.evaluation --output reports/local/evaluation.json
-```
-
-Keras downloads MNIST when needed. To evaluate another model, add `--model artifacts/model.keras`.
-
-### Performance measurement
-
-The recorded [benchmark](reports/benchmark.json) uses a 2-vCPU Linux x86-64 environment, Python 3.13.16, TensorFlow 2.20.0, and 30 iterations after warm-up.
-
-| Operation | Median | p95 |
-| --- | ---: | ---: |
-| Direct model call | 6.38 ms | 10.36 ms |
-| Sequential Flask test-client request | 7.49 ms | 8.82 ms |
-| Flask test-client request with 4 workers | 35.06 ms | 45.40 ms |
-
-These local, in-process measurements exclude HTTP network and WSGI overhead. Measure the target environment separately when assessing deployment performance.
-
-```bash
-python -m mnist_web.benchmark --output reports/local/benchmark.json
-```
+For a production-style server, run `waitress-serve --host=127.0.0.1 --port=5000 mnist_web.app:app`. Once installed, the app also starts with `mnist-web`.
 
 ## API
 
-| Endpoint | Purpose | Success |
-| --- | --- | --- |
-| `GET /health` | Application liveness; does not require an available model | HTTP 200 |
-| `GET /ready` | Load, verify, and warm the model; return its identity | HTTP 200 |
-| `POST /predict` | Recognize one PNG drawing | HTTP 200 |
-| `GET /collect` | Open the labeled sample collection interface | HTML page |
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /health` | Liveness. Does not require the model. |
+| `GET /ready` | Loads, verifies, and warms the model, then returns its identity. |
+| `POST /predict` | Classifies `{"image": "data:image/png;base64,..."}`. |
+| `GET /collect` | Opens a page for collecting labeled human handwriting. |
 
-Submit JSON with a PNG Data URL to `POST /predict`:
+A successful prediction returns:
 
 ```json
 {
-  "image": "data:image/png;base64,..."
+  "prediction": 7,
+  "confidence": 0.999999,
+  "top3": [{"digit": 7, "confidence": 0.999999}, {"digit": 9, "confidence": 0.000001}, {"digit": 3, "confidence": 0.0}],
+  "uncertain": null,
+  "confidence_threshold": null,
+  "model": {"id": "mnist-drawing-seed42-20261010T103405Z", "sha256": "45a77cdd…", "preprocessing_version": "white-ink-crop20-mass-center28-v1"}
 }
 ```
 
-| Response field | Meaning |
+Errors return JSON:
+
+| Status | Cause |
+| ---: | --- |
+| 400 | Malformed input, a non-PNG image, an empty canvas, or an image side over 2048 px |
+| 413 | Request body over 2 MiB |
+| 503 | Model loading or inference failed |
+
+### Configuration
+
+| Variable | Effect |
 | --- | --- |
-| `prediction` | Highest-scoring digit, 0–9 |
-| `confidence` | Its Softmax score |
-| `top3` | Three entries with `digit` and `confidence`, ranked by score |
-| `uncertain` | Whether the score falls below the configured threshold; `null` without an active threshold |
-| `confidence_threshold` | Active threshold, or `null` |
-| `model` | Loaded model identity, including ID, SHA-256, and preprocessing version |
+| `MNIST_MODEL_PATH` | Serve another model. Its `.manifest.json` must sit next to it. |
+| `MNIST_MODEL_SHA256` | Pin an expected model hash. |
+| `MNIST_CALIBRATION_PATH` | Enable a confidence threshold fit on human validation data for this exact model. |
+| `PORT` | Listening port. Defaults to 5000. |
+| `FLASK_DEBUG` | Enables the debugger when set to `1`. |
 
-Scores do not represent guaranteed correctness. Without a matching human-validation threshold file, `uncertain` and `confidence_threshold` remain `null`.
-
-| Failure | HTTP status |
-| --- | ---: |
-| Invalid JSON, missing image, invalid/non-PNG input, empty drawing, or image side above 2048 px | 400 |
-| Request body above 2 MiB | 413 |
-| Model loading or inference failure; failed readiness | 503 |
-
-Errors use JSON responses. Model failures are logged on the server.
-
-## Model and runtime configuration
-
-The default model is [`mnist_web/assets/model.keras`](mnist_web/assets/model.keras). Its [manifest](mnist_web/assets/model.manifest.json) records the ID, SHA-256, input shape, class order, and preprocessing version.
-
-| Environment variable | Behavior |
-| --- | --- |
-| `MNIST_MODEL_PATH` | Load a custom model; keep its matching `.manifest.json` alongside it |
-| `MNIST_MODEL_SHA256` | Additionally pin the expected model hash |
-| `MNIST_CALIBRATION_PATH` | Load a human-validation threshold file matching the model hash and preprocessing version |
-| `PORT` | Port for `python app.py` / `mnist-web`; default `5000` |
-| `FLASK_DEBUG` | Enable the development debugger only when set to `1`; default disabled |
-
-After training a custom model, configure it in PowerShell:
-
-```powershell
-$env:MNIST_MODEL_PATH = (Resolve-Path artifacts/model.keras).Path
-python app.py
-```
-
-Or in a POSIX shell:
+## Training, evaluation, and export
 
 ```bash
-export MNIST_MODEL_PATH="$PWD/artifacts/model.keras"
-python app.py
-```
-
-Serve through Waitress:
-
-```bash
-waitress-serve --host=127.0.0.1 --port=5000 mnist_web.app:app
-```
-
-## Training and reproducibility
-
-```bash
+# Train. Writes model.keras, manifest, metadata, and split indices to artifacts/.
 python model.py --output artifacts/model.keras --epochs 20 --batch-size 128 --seed 42
+
+# Evaluate on MNIST and synthetic canvases (add --model to evaluate another artifact).
+python -m mnist_web.evaluation --output reports/local/evaluation.json
+
+# Measure warm latency.
+python -m mnist_web.benchmark --output reports/local/benchmark.json
+
+# Export the browser model. Requires optional tools; see requirements-export.txt.
+python -m pip install --no-deps -r requirements-export.txt
+python scripts/export_onnx.py
 ```
 
-The current pipeline uses a stratified 90/10 training/validation split, a shared seed, and deterministic TensorFlow operations by default. Default `--preprocessing drawing` applies serving crop-and-center processing to training, validation, and test images. Use `--preprocessing normalized` for a normalization-only comparison.
+Human evaluation works like this:
 
-The network uses `Conv2D(32) → MaxPooling2D → Conv2D(64) → MaxPooling2D → Flatten → Dense(64) → Dense(10, Softmax)`. Training adds translation, rotation, and zoom augmentation with constant black padding, and uses Adam with sparse categorical cross-entropy. Early stopping, checkpoint selection, and learning-rate reduction monitor `val_loss`; evaluation reloads the saved best checkpoint.
-
-| Output | Contents |
-| --- | --- |
-| `model.keras` | Saved best model |
-| `model.manifest.json` | Model hash, identity, and input/output contract |
-| `model.metadata.json` | Seed, environment, hardware, history, best epoch, preprocessing, data/split hashes, and test metrics |
-| `model.split.npz` | Training and validation indices |
-
-Outputs go to `artifacts/` by default. Reproduction depends on matching dependencies, hardware, and runtime; bitwise identity across devices is not guaranteed.
-
-The bundled model was produced by this pipeline with the command above (default `drawing` preprocessing, seed 42). Training stopped early after 16 epochs and restored epoch 13, the lowest `val_loss`. Its [metadata](mnist_web/assets/model.metadata.json) records the runtime, dataset and split hashes, history, and test metrics. A second run in the same environment reproduced bit-identical weights; the `.keras` file hash differs between runs because the archive stores a save timestamp.
-
-## Human canvas evaluation
-
-Open [http://127.0.0.1:5000/collect](http://127.0.0.1:5000/collect) to save drawings with true labels and anonymous writer IDs. Samples stay in page memory until exported as JSON; export before leaving. Collection does not automatically upload samples to the server.
-
-Collect digits 0–9 across writing styles, sizes, positions, stroke widths, and tilts. Label scribbles or multiple digits as `-1`. Keep writer IDs stable and assign different writers to validation and test sets. The evaluator rejects duplicate images and writer overlap between the corpora.
-
-After exporting both datasets:
+1. Collect drawings at `/collect`, giving each one its true label and an anonymous writer ID.
+2. Export one validation corpus and one test corpus, written by different people.
+3. Run the evaluation:
 
 ```bash
-python -m mnist_web.evaluation --canvas-validation datasets/validation.json --canvas-test datasets/test.json --calibration-output artifacts/calibration.json --output reports/local/human-evaluation.json
+python -m mnist_web.evaluation --canvas-validation datasets/validation.json \
+  --canvas-test datasets/test.json --calibration-output artifacts/calibration.json
 ```
 
-Threshold selection uses validation data; accepted accuracy, coverage, and non-digit false accepts are reported on the independent test set. Defaults require at least 30 accepted validation samples and 95% empirical accepted accuracy. Insufficient evidence leaves the threshold inactive. This is an empirical selection rule, rather than probability calibration or a statistical guarantee.
+The evaluator rejects duplicate drawings and writer overlap between the two corpora. A threshold is selected only if it keeps at least 30 validation samples at 95% or higher empirical accuracy.
 
-To use the generated threshold, set `MNIST_CALIBRATION_PATH` to its path and restart the service.
-
-## Development and delivery
-
-Run checks from the repository root after installing the locked dependencies:
+## Testing and CI
 
 ```bash
 python -m ruff check .
-python -m pytest
-node --test tests/frontend.test.cjs
+python -m pytest                       # API, preprocessing, real-model inference, training
+                                       # reproducibility, release integrity, ONNX export
+node --test tests/frontend.test.cjs    # canvas behavior + JS/Python preprocessing parity
 python -m build --no-isolation
-python -m mnist_web.release --evaluation reports/evaluation.json --output dist/model-bundle
 ```
 
-Frontend tests require Node.js; CI uses Node.js 22. Tests cover preprocessing, API errors, model identity and real-model inference, training artifacts, threshold selection, release integrity, and canvas/request behavior.
+- **[CI](.github/workflows/ci.yml)** runs lint, Python and frontend tests, the wheel and sdist build, an install check outside the checkout, and the static demo build. It covers Windows and Linux with Python 3.11 and 3.13.
+- **[Pages](.github/workflows/pages.yml)** deploys the demo on every relevant push to `main`.
+- **[Release bundle](.github/workflows/release.yml)** evaluates the model and packages the model, report, lock file, and `SHA256SUMS`.
 
-The [CI workflow](.github/workflows/ci.yml) defines Windows/Linux jobs with Python 3.11 and 3.13, including linting, Python and frontend tests, builds, and wheel installation checks outside the checkout.
-
-The release command requires an empty output directory and a report matching the model hash. It bundles the model, manifest, evaluation, available metadata and dependency lock, then writes `SHA256SUMS`. The manually triggered [Model and wheel release bundle workflow](.github/workflows/release.yml) evaluates the model and uploads distribution artifacts; public GitHub Releases remain a maintainer action.
-
-Regenerate the dependency lock with `uv`:
-
-```bash
-uv pip compile pyproject.toml --extra dev --universal --python-version 3.11 --generate-hashes --constraint constraints-tested.txt --output-file requirements.lock
-```
-
-## Repository layout
+## Project structure
 
 ```text
-app.py / model.py / preprocessing.py   Compatibility entry points
 mnist_web/
-  app.py                              Flask endpoints and inference service
-  preprocessing.py                    Shared image preprocessing
-  training.py                         Training and provenance recording
-  evaluation.py                       MNIST, synthetic, and human evaluation
-  benchmark.py                        Inference and API measurements
-  artifacts.py / release.py            Model verification and bundle creation
-  assets/                             Bundled model, manifest, and metadata
-  templates/ / static/                 Packaged browser interface
-tests/                                Python and frontend tests
-reports/                              Recorded metrics and evaluation notes
-scripts/check_installed.py            Installed-package verification
-.github/workflows/                     CI and artifact workflows
+  app.py            Flask API: input validation, verified model loading, warm inference
+  preprocessing.py  Versioned preprocessing shared by training, evaluation, and serving
+  training.py       Reproducible training with provenance metadata
+  evaluation.py     MNIST, synthetic-canvas, and human-canvas evaluation; threshold selection
+  benchmark.py      Warm latency and concurrency measurement
+  artifacts.py      Model hashing, manifests, identity checks
+  release.py        Checksummed model bundles
+  assets/           Pinned model, manifest, and training metadata
+  static/, templates/  Flask UI and sample collection page
+demo/               Static browser demo: JS preprocessing port, ONNX model, UI
+scripts/            ONNX export, site build, installed-wheel check
+tests/              Python and Node tests, plus parity fixtures
+reports/            Model card, evaluation, and benchmark results
 ```
 
-## Scope and license
+## Limitations and roadmap
 
-This project supports experimentation, learning, and local inference for single handwritten digits. Real drawings can differ from MNIST, and high scores do not establish that an input is a digit. Multiple-digit recognition, general OCR, and reliable rejection of arbitrary non-digit inputs are outside its validated scope.
+- **No human evaluation yet.** Accuracy on human handwriting is unmeasured. Collecting a writer-split corpus with `/collect` is the next step.
+- **Non-digits aren't rejected.** Softmax scores do not reliably reject non-digits. Candidate fixes are an energy-based out-of-distribution score or a trained "not a digit" class.
+- **Thick, slanted strokes are the weakest condition** (98.58%). Stroke-width augmentation should close part of the gap.
+- **Concurrent requests queue up.** The Flask service runs inference behind a lock. Request batching would raise throughput under load.
 
-Released under the [MIT License](LICENSE).
+## License
+
+[MIT](LICENSE)

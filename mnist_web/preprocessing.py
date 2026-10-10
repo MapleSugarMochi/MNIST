@@ -45,7 +45,7 @@ def preprocess_drawing(image: Image.Image) -> np.ndarray:
     grayscale = np.asarray(image.convert("L"), dtype=np.uint8)
     ink_mask = grayscale > INK_THRESHOLD
     if int(np.count_nonzero(ink_mask)) < MIN_INK_PIXELS:
-        raise EmptyDrawingError("请先写一个数字。")
+        raise EmptyDrawingError("Draw a digit first.")
 
     rows, columns = np.where(ink_mask)
     cropped = grayscale[rows.min() : rows.max() + 1, columns.min() : columns.max() + 1]
@@ -65,7 +65,7 @@ def preprocess_drawing(image: Image.Image) -> np.ndarray:
     mass = centered.astype(np.float64)
     total = mass.sum()
     if total <= 0:
-        raise EmptyDrawingError("笔迹过于细小，请重新书写。")
+        raise EmptyDrawingError("The stroke is too small. Please draw again.")
     y_coordinates, x_coordinates = np.indices(centered.shape)
     center_x = float((x_coordinates * mass).sum() / total)
     center_y = float((y_coordinates * mass).sum() / total)

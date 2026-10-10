@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Draw a digit and watch a CNN classify it, running entirely in your browser with ONNX Runtime Web.">
+    <title>MNIST Digit Recognizer</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+    <main class="card demo">
+        <header class="demo-header">
+            <p class="eyebrow">MNIST · CNN · ONNX Runtime Web</p>
+            <h1>Handwritten Digit Recognizer</h1>
+            <p class="intro">Draw one digit from 0 to 9. The model runs locally in your browser, and nothing you draw is uploaded.</p>
+        </header>
+
+        <div class="demo-grid">
+            <section class="pad" aria-label="Drawing pad">
+                <canvas id="canvas" width="280" height="280" aria-label="Handwritten digit canvas"></canvas>
+                <div class="actions">
+                    <button id="clear-button" class="secondary" type="button">Clear</button>
+                    <button id="predict-button" type="button" disabled>Recognize</button>
+                </div>
+                <label class="toggle"><input id="live-toggle" type="checkbox" checked> Recognize after each stroke</label>
+            </section>
+
+            <section class="output" aria-live="polite" aria-atomic="true">
+                <p id="status" class="status">Loading model…</p>
+                <div class="prediction">
+                    <div id="result" class="digit" aria-label="Prediction">—</div>
+                    <div class="model-view">
+                        <canvas id="preview" width="28" height="28" aria-label="28 by 28 model input"></canvas>
+                        <span>Model input · 28×28</span>
+                    </div>
+                </div>
+                <p id="confidence" class="confidence"></p>
+                <ol id="bars" class="bars" aria-label="Score for each digit"></ol>
+                <p class="score-note">Softmax scores are not accuracy guarantees. The model was trained on MNIST and cannot reliably reject non-digits.</p>
+            </section>
+        </div>
+
+        <footer class="demo-footer">
+            <span id="model-id"></span>
+            <a href="https://github.com/MapleSugarMochi/MNIST">Source on GitHub</a>
+        </footer>
+    </main>
+
+    <script src="vendor/ort.wasm.min.js"></script>
+    <script src="drawing.js"></script>
+    <script src="preprocessing.js"></script>
+    <script src="demo.js"></script>
+</body>
+</html>

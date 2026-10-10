@@ -28,24 +28,24 @@ MAX_IMAGE_SIDE = 2048
 
 def decode_image_data_url(data_url: Any) -> Image.Image:
     if not isinstance(data_url, str):
-        raise ValueError("字段 image 必须是 PNG Data URL。")
+        raise ValueError("Field 'image' must be a PNG data URL.")
     match = DATA_URL_PATTERN.fullmatch(data_url)
     if not match:
-        raise ValueError("仅支持 base64 编码的 PNG Data URL。")
+        raise ValueError("Only base64-encoded PNG data URLs are supported.")
     try:
         raw = base64.b64decode(match.group("data"), validate=True)
     except (binascii.Error, ValueError) as exc:
-        raise ValueError("图片的 base64 数据无效。") from exc
+        raise ValueError("Image base64 data is invalid.") from exc
     try:
         with Image.open(io.BytesIO(raw)) as source:
             if source.format != "PNG":
-                raise ValueError("图片内容不是 PNG 格式。")
+                raise ValueError("Image content is not a PNG.")
             if max(source.size) > MAX_IMAGE_SIDE:
-                raise ValueError("图片尺寸过大。")
+                raise ValueError("Image dimensions are too large.")
             source.load()
             return source.copy()
     except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
-        raise ValueError("无法解析图片。") from exc
+        raise ValueError("Image could not be decoded.") from exc
 
 
 def validate_probabilities(output: Any, size: int = 1) -> np.ndarray:
@@ -134,13 +134,13 @@ def create_app(model: Any | None = None) -> Flask:
             return jsonify(status="ready", model=service.ready()), 200
         except Exception:
             app.logger.exception("Model readiness failed")
-            return jsonify(status="unavailable", error="模型暂不可用。"), 503
+            return jsonify(status="unavailable", error="Model is unavailable."), 503
 
     @app.post("/predict")
     def predict():
         payload = request.get_json(silent=True)
         if not isinstance(payload, dict) or "image" not in payload:
-            return jsonify(error="请求体必须包含 image 字段。"), 400
+            return jsonify(error="Request body must include an 'image' field."), 400
         try:
             batch = preprocess_drawing(decode_image_data_url(payload["image"]))
         except ValueError as exc:
@@ -149,7 +149,7 @@ def create_app(model: Any | None = None) -> Flask:
             probabilities = service.predict(batch)
         except Exception:
             app.logger.exception("Model inference failed")
-            return jsonify(error="识别服务暂不可用，请稍后重试。"), 503
+            return jsonify(error="Recognition service is unavailable. Please try again later."), 503
         indices = np.argsort(probabilities)[::-1][:3]
         confidence = float(probabilities[indices[0]])
         return jsonify(
@@ -165,7 +165,7 @@ def create_app(model: Any | None = None) -> Flask:
 
     @app.errorhandler(RequestEntityTooLarge)
     def request_too_large(_: RequestEntityTooLarge):
-        return jsonify(error="请求体不能超过 2 MB。"), 413
+        return jsonify(error="Request body must not exceed 2 MB."), 413
 
     return app
 

@@ -1,0 +1,101 @@
+.card.demo { width: min(100%, 820px); }
+
+.demo-header { margin-bottom: 24px; }
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 28px;
+    align-items: start;
+}
+
+.pad canvas#canvas { margin: 0; }
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 0;
+    color: #aeb6c4;
+    font-size: 14px;
+    cursor: pointer;
+}
+.toggle input { width: auto; margin: 0; accent-color: #6366f1; }
+
+.output { min-height: 100%; }
+.output .status { text-align: left; }
+
+.prediction {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 8px;
+}
+.prediction .digit { margin: 0; font-size: 88px; font-variant-numeric: tabular-nums; }
+
+.model-view {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    color: #8e98a8;
+    font-size: 12px;
+}
+canvas#preview {
+    width: 84px;
+    height: 84px;
+    margin: 0;
+    border: 1px solid #394150;
+    border-radius: 6px;
+    image-rendering: pixelated;
+    cursor: default;
+    touch-action: auto;
+}
+
+.output .confidence { text-align: left; }
+
+.bars {
+    display: grid;
+    gap: 6px;
+    margin: 16px 0 12px;
+    padding: 0;
+    list-style: none;
+}
+.bars li {
+    display: grid;
+    grid-template-columns: 14px minmax(0, 1fr) 52px;
+    align-items: center;
+    gap: 10px;
+    color: #aeb6c4;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+.bars .track { display: block; height: 8px; overflow: hidden; border-radius: 4px; background: #1b2029; }
+.bars .fill { display: block; height: 100%; border-radius: 4px; background: #475069; transform-origin: left; }
+.bars li.top { color: #f7f8fa; font-weight: 600; }
+.bars li.top .fill { background: #6366f1; }
+.bars .value { text-align: right; }
+
+.output .score-note { text-align: left; }
+
+.demo-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #252b36;
+    color: #8e98a8;
+    font-size: 12px;
+}
+#model-id { overflow-wrap: anywhere; }
+
+@media (max-width: 720px) {
+    .demo-grid { grid-template-columns: 1fr; gap: 20px; }
+    .prediction .digit { font-size: 72px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .bars .fill { transition: width 160ms ease; }
+}

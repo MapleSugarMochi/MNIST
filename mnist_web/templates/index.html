@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="在画布上书写数字并使用 MNIST 模型识别">
-    <title>手写数字识别</title>
+    <meta name="description" content="Draw a digit on the canvas and recognize it with an MNIST CNN">
+    <title>Handwritten Digit Recognition</title>
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
@@ -12,25 +12,25 @@
     <main class="card">
         <header>
             <p class="eyebrow">MNIST · CNN</p>
-            <h1>手写数字识别</h1>
-            <p class="intro">在画布中写下一个 0–9 的数字，然后点击识别。</p>
+            <h1>Handwritten Digit Recognition</h1>
+            <p class="intro">Draw a single digit from 0 to 9, then select Recognize.</p>
         </header>
 
-        <p class="intro"><a href="{{ url_for('collect') }}">采集带标签的评测样本</a></p>
+        <p class="intro"><a href="{{ url_for('collect') }}">Collect labeled evaluation samples</a></p>
 
-        <canvas id="canvas" width="280" height="280" aria-label="手写数字画布"></canvas>
+        <canvas id="canvas" width="280" height="280" aria-label="Handwritten digit canvas"></canvas>
 
         <div class="actions">
-            <button id="clear-button" class="secondary" type="button">清除</button>
-            <button id="predict-button" type="button">识别</button>
+            <button id="clear-button" class="secondary" type="button">Clear</button>
+            <button id="predict-button" type="button">Recognize</button>
         </div>
 
         <section class="result-panel" aria-live="polite" aria-atomic="true">
-            <p id="status" class="status">等待输入</p>
-            <div id="result" class="digit" aria-label="预测结果">—</div>
+            <p id="status" class="status">Waiting for input</p>
+            <div id="result" class="digit" aria-label="Prediction">—</div>
             <p id="confidence" class="confidence"></p>
-            <p class="score-note">模型分数不代表正确率；请每次只写一个数字。</p>
-            <ol id="top-results" class="top-results" aria-label="最可能的三个结果"></ol>
+            <p class="score-note">Model scores are not accuracy guarantees. Draw one digit at a time.</p>
+            <ol id="top-results" class="top-results" aria-label="Top three predictions"></ol>
         </section>
     </main>
 
